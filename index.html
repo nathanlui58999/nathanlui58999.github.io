@@ -1,0 +1,753 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#3d5a1e">
+<title>FarmBooks 農場記帳</title>
+<link rel="manifest" href="data:application/json;base64,eyJuYW1lIjoiRmFybUJvb2tzIOiyvOWgtOiomOW4syIsInNob3J0X25hbWUiOiJGYXJtQm9va3MiLCJzdGFydF91cmwiOiIuIiwiZGlzcGxheSI6InN0YW5kYWxvbmUiLCJiYWNrZ3JvdW5kX2NvbG9yIjoiI0ZGRjhFMSIsInRoZW1lX2NvbG9yIjoiIzNkNWExZSJ9">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&family=Fredoka:wght@400;500;600;700&display=swap" rel="stylesheet">
+<!-- STYLES: filled by edit -->
+<style>
+:root{
+  --g1:#3d5a1e;--g2:#5a7a2e;--g3:#8fb848;--g4:#c8e6a0;
+  --cr:#fdf6e3;--cr2:#f5e6c8;--cr3:#efe0b8;
+  --br:#8b6914;--br2:#c49a3a;--br3:#5c4410;
+  --rd:#d94f4f;--rd2:#f7c4c4;--bl:#4a90d9;--wh:#fff;
+  --sh:0 2px 12px rgba(93,74,20,.12);--sh2:0 6px 24px rgba(93,74,20,.18);
+  --r:16px;--rs:10px;--nh:70px;--hh:60px;
+  --orange:#e8a735;--purple:#9b6dff;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{font-size:16px;-webkit-tap-highlight-color:transparent}
+body{font-family:'Noto Sans TC','Fredoka',sans-serif;background:var(--cr);color:var(--g1);min-height:100dvh;overflow:hidden;position:relative}
+body::before{content:'';position:fixed;inset:0;z-index:0;pointer-events:none;
+  background:radial-gradient(ellipse at 20% 0%,rgba(143,184,72,.15) 0%,transparent 60%),
+  radial-gradient(ellipse at 80% 100%,rgba(196,154,58,.1) 0%,transparent 50%),
+  url("data:image/svg+xml,%3Csvg width='60' height='60' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence baseFrequency='.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.03'/%3E%3C/svg%3E")}
+#app{position:relative;z-index:1;height:100dvh;display:flex;flex-direction:column;overflow:hidden;max-width:480px;margin:0 auto}
+
+/* HEADER */
+.hdr{height:var(--hh);display:flex;align-items:center;padding:0 16px;flex-shrink:0;
+  background:linear-gradient(135deg,var(--g1) 0%,var(--g2) 100%);color:var(--cr);position:relative;gap:12px}
+.hdr-logo{font-family:'Fredoka',sans-serif;font-weight:700;font-size:1.15rem;letter-spacing:.3px;white-space:nowrap}
+.hdr-streak{display:flex;align-items:center;gap:4px;background:rgba(255,255,255,.15);padding:3px 10px;border-radius:14px;font-size:.7rem;font-weight:500}
+.hdr-right{margin-left:auto;display:flex;align-items:center;gap:8px}
+.hdr-seeds{background:var(--br2);color:var(--wh);padding:5px 12px;border-radius:20px;font-size:.78rem;font-weight:600;
+  display:flex;align-items:center;gap:5px;box-shadow:0 2px 8px rgba(0,0,0,.15);font-family:'Fredoka',sans-serif}
+.hdr-weather{font-size:1.3rem;filter:drop-shadow(0 1px 2px rgba(0,0,0,.2));animation:weatherSway 3s ease-in-out infinite alternate}
+
+/* PAGES */
+.pages{flex:1;overflow:hidden;position:relative}
+.page{position:absolute;inset:0;overflow-y:auto;overflow-x:hidden;padding:14px 14px calc(var(--nh) + 14px);
+  opacity:0;transform:translateX(8px);pointer-events:none;transition:opacity .25s,transform .25s;-webkit-overflow-scrolling:touch}
+.page.active{opacity:1;transform:translateX(0);pointer-events:auto}
+
+/* NAV */
+.nav{height:var(--nh);display:flex;align-items:stretch;flex-shrink:0;background:var(--wh);
+  border-top:1px solid rgba(93,74,20,.06);box-shadow:0 -4px 20px rgba(93,74,20,.06);position:relative;z-index:10;
+  padding-bottom:env(safe-area-inset-bottom)}
+.nav button{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;
+  border:none;background:none;cursor:pointer;color:#aaa;font-size:.62rem;font-weight:600;
+  font-family:'Noto Sans TC',sans-serif;transition:all .2s;position:relative}
+.nav button .ni{font-size:1.4rem;line-height:1;transition:transform .2s}
+.nav button.active{color:var(--g2)}
+.nav button.active .ni{transform:scale(1.2) translateY(-1px)}
+.nav button.active::after{content:'';position:absolute;top:0;left:20%;right:20%;height:3px;
+  background:linear-gradient(90deg,var(--g3),var(--g2));border-radius:0 0 4px 4px}
+.nav button .badge{position:absolute;top:6px;right:50%;transform:translateX(14px);
+  background:var(--rd);color:var(--wh);font-size:.55rem;min-width:16px;height:16px;
+  border-radius:8px;display:flex;align-items:center;justify-content:center;font-weight:700}
+
+/* CARDS */
+.card{background:var(--wh);border-radius:var(--r);box-shadow:var(--sh);padding:14px;margin-bottom:12px;
+  border:1px solid rgba(93,74,20,.05);animation:cardIn .35s ease both}
+.card-t{font-size:.72rem;color:#aaa;font-weight:600;margin-bottom:8px;text-transform:uppercase;letter-spacing:1.2px;
+  display:flex;align-items:center;justify-content:space-between}
+
+/* DASHBOARD */
+.dash-hero{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px}
+.dash-hero .hi{background:var(--wh);border-radius:var(--r);padding:16px 14px;box-shadow:var(--sh);
+  border:1px solid rgba(93,74,20,.05);position:relative;overflow:hidden}
+.dash-hero .hi::after{content:'';position:absolute;top:-20px;right:-20px;width:60px;height:60px;border-radius:50%;opacity:.08}
+.dash-hero .hi.inc::after{background:var(--g3)}
+.dash-hero .hi.exp::after{background:var(--rd)}
+.dash-hero .hi .lb{font-size:.68rem;color:#aaa;font-weight:500;margin-bottom:2px;display:flex;align-items:center;gap:4px}
+.dash-hero .hi .vl{font-family:'Fredoka',sans-serif;font-size:1.25rem;font-weight:700}
+.dash-hero .hi.inc .vl{color:var(--g2)}
+.dash-hero .hi.exp .vl{color:var(--rd)}
+.balance-bar{background:linear-gradient(135deg,var(--g2),var(--g1));border-radius:var(--r);padding:14px 16px;
+  margin-bottom:12px;display:flex;align-items:center;justify-content:space-between;box-shadow:var(--sh2)}
+.balance-bar .bl{color:rgba(255,255,255,.7);font-size:.72rem;font-weight:500}
+.balance-bar .bv{color:var(--wh);font-family:'Fredoka',sans-serif;font-size:1.4rem;font-weight:700}
+
+.mini-farm{display:grid;grid-template-columns:repeat(5,1fr);gap:4px;padding:10px;
+  background:linear-gradient(145deg,#8db84a,#6a9c30);border-radius:var(--rs);margin-top:8px}
+.mini-farm .mc{aspect-ratio:1;border-radius:6px;display:flex;align-items:center;justify-content:center;
+  font-size:.85rem;background:rgba(255,255,255,.1)}
+.mini-farm .mc.mf{background:rgba(255,255,255,.2)}
+
+.tx-list{list-style:none}
+.tx-item{display:flex;align-items:center;gap:10px;padding:11px 0;border-bottom:1px solid rgba(93,74,20,.05);animation:cardIn .3s ease both}
+.tx-item:last-child{border-bottom:none}
+.tx-ic{width:38px;height:38px;border-radius:11px;display:flex;align-items:center;justify-content:center;font-size:1.15rem;flex-shrink:0}
+.tx-ic.inc{background:var(--g4)}
+.tx-ic.exp{background:var(--rd2)}
+.tx-nfo{flex:1;min-width:0}
+.tx-nfo .cn{font-weight:600;font-size:.82rem}
+.tx-nfo .nt{font-size:.68rem;color:#aaa;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tx-amt{font-family:'Fredoka',sans-serif;font-weight:600;font-size:.92rem;flex-shrink:0}
+.tx-amt.inc{color:var(--g2)}
+.tx-amt.exp{color:var(--rd)}
+.tx-dt{font-size:.6rem;color:#ccc;flex-shrink:0;text-align:right;min-width:36px}
+
+/* AD */
+.ad-unit{background:linear-gradient(135deg,#f0ead6,#e8dfc5);border:2px dashed var(--br2);border-radius:var(--rs);
+  padding:16px 12px;text-align:center;margin:12px 0;font-size:.72rem;color:var(--br);position:relative;overflow:hidden}
+.ad-unit::before{content:'AD';font-size:.6rem;font-weight:700;background:var(--br2);color:var(--wh);
+  padding:1px 6px;border-radius:4px;position:absolute;top:6px;right:6px}
+.ad-native{background:linear-gradient(135deg,#f0ead6,#e8dfc5);border:1px dashed var(--br2);border-radius:var(--rs);
+  padding:8px;text-align:center;margin:5px 0;font-size:.6rem;color:var(--br)}
+
+/* RECORD */
+.rec-amt-wrap{background:linear-gradient(135deg,var(--g1),var(--g2));border-radius:var(--r);padding:24px 16px;
+  margin-bottom:14px;text-align:center;position:relative;overflow:hidden}
+.rec-amt-wrap::before{content:'';position:absolute;top:-40px;right:-40px;width:100px;height:100px;
+  background:rgba(255,255,255,.05);border-radius:50%}
+.rec-amt-wrap .currency{color:rgba(255,255,255,.5);font-family:'Fredoka',sans-serif;font-size:1.2rem;font-weight:600}
+.rec-amt-input{background:none;border:none;outline:none;color:var(--wh);font-family:'Fredoka',sans-serif;
+  font-size:2.4rem;font-weight:700;text-align:center;width:100%;caret-color:var(--g3)}
+.rec-amt-input::placeholder{color:rgba(255,255,255,.25)}
+.type-tog{display:flex;gap:6px;margin-bottom:14px}
+.type-tog button{flex:1;padding:10px;border-radius:var(--rs);border:2px solid rgba(93,74,20,.08);
+  background:var(--wh);font-size:.82rem;font-weight:600;cursor:pointer;
+  font-family:'Noto Sans TC',sans-serif;transition:all .2s;display:flex;align-items:center;justify-content:center;gap:4px}
+.type-tog .a-exp{background:var(--rd2);border-color:var(--rd);color:var(--rd)}
+.type-tog .a-inc{background:var(--g4);border-color:var(--g2);color:var(--g1)}
+.fsec{margin-bottom:14px}
+.fsec label{display:block;font-size:.72rem;font-weight:600;margin-bottom:6px;color:var(--g1)}
+.finput{width:100%;padding:11px 13px;border:2px solid var(--cr2);border-radius:var(--rs);
+  font-size:.9rem;font-family:'Noto Sans TC',sans-serif;background:var(--wh);transition:border-color .2s;outline:none}
+.finput:focus{border-color:var(--g3)}
+.cg{display:grid;grid-template-columns:repeat(4,1fr);gap:7px}
+.cb{display:flex;flex-direction:column;align-items:center;gap:3px;padding:10px 4px;
+  border-radius:var(--rs);border:2px solid var(--cr2);background:var(--wh);
+  cursor:pointer;transition:all .15s;font-family:'Noto Sans TC',sans-serif}
+.cb .ce{font-size:1.25rem}.cb .cl{font-size:.58rem;font-weight:500;color:#999}
+.cb.sel{border-color:var(--g2);background:var(--g4);transform:scale(1.06)}
+.sub-btn{width:100%;padding:14px;border:none;border-radius:var(--r);
+  background:linear-gradient(135deg,var(--g2),var(--g3));color:var(--wh);font-size:.95rem;font-weight:700;
+  cursor:pointer;font-family:'Noto Sans TC',sans-serif;box-shadow:var(--sh);
+  transition:transform .12s,box-shadow .12s;position:relative;overflow:hidden}
+.sub-btn:active{transform:scale(.97);box-shadow:none}
+.sub-btn .ripple{position:absolute;border-radius:50%;background:rgba(255,255,255,.3);
+  transform:scale(0);animation:rippleAnim .5s ease-out}
+
+/* FARM */
+.farm-header{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.farm-lvl{background:linear-gradient(135deg,var(--br2),var(--br));color:var(--wh);padding:5px 14px;
+  border-radius:20px;font-family:'Fredoka',sans-serif;font-size:.78rem;font-weight:600;white-space:nowrap}
+.farm-xp{flex:1;height:8px;background:var(--cr2);border-radius:4px;overflow:hidden;position:relative}
+.farm-xp-fill{height:100%;background:linear-gradient(90deg,var(--g3),var(--g2));border-radius:4px;transition:width .5s ease}
+.farm-xp-label{font-size:.65rem;color:#999;font-weight:500;white-space:nowrap}
+.farm-weather{background:var(--wh);border-radius:var(--r);padding:10px 14px;margin-bottom:10px;
+  display:flex;align-items:center;gap:8px;box-shadow:var(--sh);font-size:.78rem;border:1px solid rgba(93,74,20,.05)}
+.farm-weather .fw-icon{font-size:1.5rem}
+.farm-weather .fw-info{flex:1}
+.farm-weather .fw-title{font-weight:600;font-size:.78rem}
+.farm-weather .fw-desc{font-size:.65rem;color:#999}
+.fg{display:grid;grid-template-columns:repeat(5,1fr);gap:5px;
+  background:linear-gradient(145deg,#8db84a,#6a9c30);padding:10px;border-radius:var(--r);
+  box-shadow:inset 0 2px 8px rgba(0,0,0,.1),var(--sh2);border:3px solid var(--g1);position:relative}
+.fg::before{content:'';position:absolute;inset:0;border-radius:13px;pointer-events:none;
+  background:url("data:image/svg+xml,%3Csvg width='20' height='20' xmlns='http://www.w3.org/2000/svg'%3E%3Ccircle cx='10' cy='10' r='1' fill='rgba(255,255,255,.06)'/%3E%3C/svg%3E")}
+.fc{aspect-ratio:1;border-radius:9px;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  font-size:1.5rem;cursor:pointer;position:relative;background:rgba(255,255,255,.1);
+  border:2px dashed rgba(255,255,255,.18);transition:all .2s;gap:0}
+.fc:active{transform:scale(.92)}
+.fc.ff{border-style:solid;border-color:rgba(255,255,255,.28);background:rgba(255,255,255,.18)}
+.fc.placing{animation:pop .4s ease}
+.fc.harvestable{animation:harvestGlow 1.2s ease-in-out infinite;border-color:var(--orange);border-width:2px}
+.fc .growth-dot{width:4px;height:4px;border-radius:50%;position:absolute;bottom:3px}
+.fc .growth-dot.g1{background:#ffcc44}
+.fc .growth-dot.g2{background:var(--g3)}
+.fc .growth-dot.g3{background:var(--orange)}
+.fc.select-target{background:rgba(255,255,255,.35);border-color:rgba(255,255,255,.5);border-style:solid}
+.farm-actions{display:flex;gap:8px;margin-top:10px}
+.farm-actions button{flex:1;padding:10px;border:none;border-radius:var(--rs);font-size:.78rem;font-weight:600;
+  cursor:pointer;font-family:'Noto Sans TC',sans-serif;transition:all .15s}
+.farm-actions button:active{transform:scale(.96)}
+.fa-harvest{background:linear-gradient(135deg,var(--orange),#d4911e);color:var(--wh);box-shadow:var(--sh)}
+.fa-remove{background:var(--cr2);color:var(--br)}
+
+/* SHOP */
+.shop-bal{background:linear-gradient(135deg,var(--br2),var(--br));border-radius:var(--r);padding:14px 16px;
+  margin-bottom:12px;display:flex;align-items:center;justify-content:space-between;box-shadow:var(--sh)}
+.shop-bal .sb-l{color:rgba(255,255,255,.7);font-size:.75rem;font-weight:500}
+.shop-bal .sb-v{color:var(--wh);font-family:'Fredoka',sans-serif;font-size:1.3rem;font-weight:700;display:flex;align-items:center;gap:5px}
+.sg{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+.si{background:var(--wh);border-radius:var(--r);padding:14px 8px;text-align:center;box-shadow:var(--sh);
+  cursor:pointer;border:2px solid transparent;transition:all .15s;position:relative;overflow:hidden}
+.si:active{transform:scale(.96)}
+.si.sel{border-color:var(--g2);background:var(--g4)}
+.si .se{font-size:2rem;display:block;margin-bottom:4px}
+.si .sn{font-weight:600;font-size:.8rem;margin-bottom:3px}
+.si .sc{display:inline-flex;align-items:center;gap:3px;background:var(--cr2);padding:3px 10px;
+  border-radius:12px;font-family:'Fredoka',sans-serif;font-size:.72rem;font-weight:600;color:var(--br)}
+.si .sc::before{content:'🌰'}
+.si.no{opacity:.45;pointer-events:none}
+.si .owned{position:absolute;top:6px;right:6px;background:var(--g2);color:var(--wh);
+  font-size:.55rem;padding:2px 6px;border-radius:8px;font-weight:700}
+.buy-btn{width:100%;padding:12px;margin-top:12px;border:none;border-radius:var(--r);
+  background:linear-gradient(135deg,var(--br2),var(--br));color:var(--wh);font-size:.85rem;font-weight:700;
+  cursor:pointer;font-family:'Noto Sans TC',sans-serif;box-shadow:var(--sh);transition:transform .12s;display:none}
+.buy-btn.vis{display:block}
+.buy-btn:active{transform:scale(.97)}
+
+/* MODAL */
+.mo{position:fixed;inset:0;z-index:100;background:rgba(0,0,0,.55);backdrop-filter:blur(4px);
+  display:flex;align-items:center;justify-content:center;padding:24px;
+  opacity:0;pointer-events:none;transition:opacity .25s}
+.mo.show{opacity:1;pointer-events:auto}
+.mo-box{background:var(--cr);border-radius:24px;padding:28px 22px;text-align:center;
+  max-width:310px;width:100%;box-shadow:var(--sh2);transform:scale(.85) translateY(10px);transition:transform .3s}
+.mo.show .mo-box{transform:scale(1) translateY(0)}
+.mo-emoji{font-size:3rem;display:block;margin-bottom:8px;animation:bounce .6s ease infinite alternate}
+.mo h2{font-family:'Fredoka',sans-serif;font-size:1.2rem;margin-bottom:4px;color:var(--g1)}
+.mo p{font-size:.82rem;color:#999;margin-bottom:16px}
+.mo .se-amt{display:inline-flex;align-items:center;gap:5px;font-family:'Fredoka',sans-serif;
+  font-size:1.5rem;font-weight:700;color:var(--br)}
+.mo .se-amt::before{content:'🌰'}
+.mo .ad-int{background:linear-gradient(135deg,#f0ead6,#e8dfc5);border:2px dashed var(--br2);border-radius:var(--rs);
+  padding:12px 10px;text-align:center;margin:14px 0 0;font-size:.65rem;color:var(--br)}
+.mo-btn{margin-top:16px;padding:10px 28px;border:none;border-radius:var(--rs);
+  background:var(--g2);color:var(--wh);font-size:.85rem;font-weight:600;cursor:pointer;
+  font-family:'Noto Sans TC',sans-serif;transition:transform .12s}
+.mo-btn:active{transform:scale(.95)}
+
+/* TOAST */
+.toast{position:fixed;top:calc(var(--hh) + 8px);left:50%;transform:translateX(-50%) translateY(-20px);
+  background:var(--g1);color:var(--wh);padding:8px 20px;border-radius:20px;font-size:.78rem;font-weight:600;
+  z-index:200;opacity:0;transition:all .3s;pointer-events:none;white-space:nowrap;box-shadow:var(--sh2)}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+/* EMPTY */
+.empty{text-align:center;padding:36px 20px;color:#ccc}
+.empty .ee{font-size:2.5rem;margin-bottom:6px;display:block}
+.empty p{font-size:.82rem}
+
+/* ANIMATIONS */
+@keyframes cardIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+@keyframes pop{0%{transform:scale(0)}50%{transform:scale(1.25)}100%{transform:scale(1)}}
+@keyframes bounce{from{transform:translateY(0)}to{transform:translateY(-6px)}}
+@keyframes sparkle{0%{opacity:1;transform:scale(1)}100%{opacity:0;transform:scale(2) translateY(-20px)}}
+@keyframes harvestGlow{0%,100%{box-shadow:0 0 0 0 rgba(232,167,53,0)}50%{box-shadow:0 0 8px 3px rgba(232,167,53,.35)}}
+@keyframes weatherSway{0%{transform:rotate(-3deg)}100%{transform:rotate(3deg)}}
+@keyframes rippleAnim{to{transform:scale(4);opacity:0}}
+@keyframes shake{0%,100%{transform:translateX(0)}20%,60%{transform:translateX(-4px)}40%,80%{transform:translateX(4px)}}
+.sparkle{position:absolute;pointer-events:none;font-size:1rem;animation:sparkle .6s ease-out forwards}
+.shake{animation:shake .4s ease}
+
+/* SCROLLBAR */
+.page::-webkit-scrollbar{width:3px}
+.page::-webkit-scrollbar-thumb{background:var(--g4);border-radius:3px}
+
+@media(max-width:350px){.cg{grid-template-columns:repeat(3,1fr)}.fc{font-size:1.2rem}}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<!-- SCRIPT: filled by edit -->
+<script>
+// ========== DATA ==========
+const WEATHERS=[
+  {icon:'☀️',name:'晴天',desc:'作物生長速度正常',mult:1},
+  {icon:'🌧️',name:'雨天',desc:'作物生長加速 +50%',mult:1.5},
+  {icon:'⛈️',name:'暴風雨',desc:'作物生長暫停',mult:0},
+  {icon:'🌤️',name:'多雲',desc:'作物生長速度正常',mult:1},
+  {icon:'🌈',name:'彩虹',desc:'作物生長加速 +100%！',mult:2},
+  {icon:'❄️',name:'寒流',desc:'作物生長減速 -50%',mult:.5}
+];
+const CATS={
+  expense:[
+    {id:'food',icon:'🍜',name:'餐飲'},{id:'transport',icon:'🚌',name:'交通'},
+    {id:'fun',icon:'🎮',name:'娛樂'},{id:'shop',icon:'🛍️',name:'購物'},
+    {id:'home',icon:'🏠',name:'居住'},{id:'health',icon:'💊',name:'醫療'},
+    {id:'edu',icon:'📚',name:'教育'},{id:'other',icon:'📦',name:'其他'}
+  ],
+  income:[
+    {id:'salary',icon:'💰',name:'薪資'},{id:'bonus',icon:'🎁',name:'獎金'},
+    {id:'invest',icon:'📈',name:'投資'},{id:'freelance',icon:'💻',name:'接案'},
+    {id:'refund',icon:'🔄',name:'退款'},{id:'gift',icon:'🧧',name:'紅包'},
+    {id:'side',icon:'🏪',name:'副業'},{id:'other_in',icon:'📦',name:'其他'}
+  ]
+};
+const SHOP=[
+  {id:'wheat',emoji:'🌱',name:'小麥',cost:5,harvest:3,growTime:3},
+  {id:'sunflower',emoji:'🌻',name:'向日葵',cost:8,harvest:5,growTime:4},
+  {id:'apple',emoji:'🍎',name:'蘋果樹',cost:12,harvest:8,growTime:5},
+  {id:'chicken',emoji:'🐔',name:'小雞',cost:15,harvest:10,growTime:6},
+  {id:'cow',emoji:'🐄',name:'乳牛',cost:25,harvest:16,growTime:8},
+  {id:'barn',emoji:'🏠',name:'穀倉',cost:40,harvest:25,growTime:10},
+  {id:'windmill',emoji:'🌾',name:'風車',cost:60,harvest:40,growTime:12}
+];
+const LEVELS=[
+  {lv:1,need:0,title:'新手農夫'},{lv:2,need:5,title:'田園學徒'},
+  {lv:3,need:12,title:'豐收達人'},{lv:4,need:20,title:'農場主人'},{lv:5,need:25,title:'傳奇莊園'}
+];
+
+const Store={
+  _d:null,
+  defaults:{seeds:0,transactions:[],farm:Array(25).fill(null),farmItems:0,
+    totalHarvested:0,streak:0,lastLogin:null,weather:0,weatherDate:null},
+  load(){
+    try{this._d=JSON.parse(localStorage.getItem('farmbooks2'))||{...this.defaults}}
+    catch{this._d={...this.defaults}}
+    // migrate & validate
+    for(const k of Object.keys(this.defaults)){
+      if(this._d[k]===undefined) this._d[k]=this.defaults[k];
+    }
+    if(!Array.isArray(this._d.transactions)) this._d.transactions=[];
+    if(!Array.isArray(this._d.farm)||this._d.farm.length!==25) this._d.farm=Array(25).fill(null);
+    this.checkDaily();
+    return this._d;
+  },
+  save(){localStorage.setItem('farmbooks2',JSON.stringify(this._d))},
+  get data(){return this._d||this.load()},
+  checkDaily(){
+    const today=new Date().toDateString();
+    if(this._d.lastLogin!==today){
+      // streak
+      const yesterday=new Date(Date.now()-864e5).toDateString();
+      if(this._d.lastLogin===yesterday) this._d.streak=(this._d.streak||0)+1;
+      else if(this._d.lastLogin) this._d.streak=1;
+      else this._d.streak=1;
+      // daily weather
+      this._d.weather=Math.floor(Math.random()*WEATHERS.length);
+      this._d.weatherDate=today;
+      // daily bonus
+      const bonus=Math.min(this._d.streak,7);
+      this._d.seeds+=bonus;
+      this._d.lastLogin=today;
+      this._d._dailyBonus=bonus;
+      // grow crops
+      this.growCrops();
+      this.save();
+    }
+  },
+  growCrops(){
+    const w=WEATHERS[this._d.weather]||WEATHERS[0];
+    this._d.farm=this._d.farm.map(cell=>{
+      if(!cell||typeof cell==='string') return cell; // old format or null
+      if(cell.stage<3){
+        cell.growth=(cell.growth||0)+w.mult;
+        const item=SHOP.find(s=>s.id===cell.id);
+        const needed=item?item.growTime:5;
+        if(cell.growth>=needed){cell.stage=Math.min(cell.stage+1,3);cell.growth=0}
+      }
+      return cell;
+    });
+  }
+};
+Store.load();
+
+// ========== STATE ==========
+let tab='dashboard',recType='expense',selCat=null,selShop=null,placingItem=null,farmMode='normal';
+
+function getLevel(items){
+  for(let i=LEVELS.length-1;i>=0;i--) if(items>=LEVELS[i].need) return LEVELS[i];
+  return LEVELS[0];
+}
+function getNextLevel(items){
+  for(const l of LEVELS) if(items<l.need) return l;
+  return null;
+}
+function getWeather(){return WEATHERS[Store.data.weather]||WEATHERS[0]}
+function countHarvestable(){
+  return Store.data.farm.filter(c=>c&&typeof c==='object'&&c.stage>=3).length;
+}
+
+// ========== TOAST ==========
+let toastTimer;
+function showToast(msg){
+  const t=document.getElementById('toast');
+  if(!t) return;
+  t.textContent=msg;t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer=setTimeout(()=>t.classList.remove('show'),2200);
+}
+
+// ========== RENDER ==========
+function render(){
+  const d=Store.data;
+  const w=getWeather();
+  const lv=getLevel(d.farmItems);
+  const harv=countHarvestable();
+  document.getElementById('app').innerHTML=`
+    <div class="hdr">
+      <div class="hdr-logo">🌿 FarmBooks</div>
+      <div class="hdr-streak">🔥 ${d.streak||0}天</div>
+      <div class="hdr-right">
+        <div class="hdr-weather">${w.icon}</div>
+        <div class="hdr-seeds">🌰 ${d.seeds}</div>
+      </div>
+    </div>
+    <div class="pages">
+      ${renderDash(d)}
+      ${renderRec()}
+      ${renderFarm(d)}
+      ${renderShop2(d)}
+    </div>
+    <nav class="nav">
+      <button data-t="dashboard" onclick="sw('dashboard')"><span class="ni">📊</span>總覽</button>
+      <button data-t="record" onclick="sw('record')"><span class="ni">➕</span>記帳</button>
+      <button data-t="farm" onclick="sw('farm')"><span class="ni">🌾</span>農場${harv?'<span class=badge>'+harv+'</span>':''}</button>
+      <button data-t="shop" onclick="sw('shop')"><span class="ni">🛒</span>商店</button>
+    </nav>
+    <div class="mo" id="rewardMo">
+      <div class="mo-box">
+        <span class="mo-emoji">🌰</span>
+        <h2 id="moTitle">獲得種子！</h2>
+        <p id="moText">記帳成功</p>
+        <div class="se-amt" id="moAmt">+1</div>
+        <div class="ad-int">
+          <ins class="adsbygoogle" style="display:block" data-ad-client="ca-pub-1692670290595476"
+               data-ad-slot="2963123186" data-ad-format="fluid" data-full-width-responsive="true"></ins>
+          廣告載入中...</div>
+        <button class="mo-btn" onclick="closeMo()">太棒了！</button>
+      </div>
+    </div>
+    <div class="toast" id="toast"></div>`;
+  sw(tab);
+  // daily bonus toast
+  if(d._dailyBonus){
+    setTimeout(()=>showToast(`🔥 連續登入 ${d.streak} 天，獲得 +${d._dailyBonus} 種子！`),300);
+    delete d._dailyBonus; Store.save();
+  }
+}
+
+// ========== DASHBOARD ==========
+function renderDash(d){
+  const txs=d.transactions;
+  const tIn=txs.filter(t=>t.type==='income').reduce((s,t)=>s+t.amount,0);
+  const tOut=txs.filter(t=>t.type==='expense').reduce((s,t)=>s+t.amount,0);
+  const bal=tIn-tOut;
+  const lv=getLevel(d.farmItems);
+
+  let txH='';
+  if(!txs.length){
+    txH='<div class="empty"><span class="ee">📝</span><p>還沒有紀錄，快去記帳吧！</p></div>';
+  } else {
+    const sorted=[...txs].sort((a,b)=>b.ts-a.ts).slice(0,20);
+    sorted.forEach((t,i)=>{
+      if(i>0&&i%5===0) txH+=`<li class="ad-native"><ins class="adsbygoogle" style="display:block"
+        data-ad-client="ca-pub-1692670290595476" data-ad-slot="2963123186"
+        data-ad-format="fluid" data-ad-layout-key="-6t+ed+2i-1n-4w"></ins>原生廣告</li>`;
+      const allC=[...CATS.expense,...CATS.income];
+      const c=allC.find(x=>x.id===t.cat)||{icon:'📦',name:'其他'};
+      const sg=t.type==='income'?'+':'-';
+      const ds=new Date(t.ts).toLocaleDateString('zh-Hant',{month:'short',day:'numeric'});
+      txH+=`<li class="tx-item" style="animation-delay:${i*.03}s">
+        <div class="tx-ic ${t.type==='income'?'inc':'exp'}">${c.icon}</div>
+        <div class="tx-nfo"><div class="cn">${c.name}</div><div class="nt">${t.note||'—'}</div></div>
+        <div class="tx-dt">${ds}</div>
+        <div class="tx-amt ${t.type==='income'?'inc':'exp'}">${sg}$${t.amount.toLocaleString()}</div>
+      </li>`;
+    });
+  }
+
+  // mini farm preview
+  const mf=d.farm.map(c=>{
+    if(!c) return '<div class="mc"></div>';
+    const item=typeof c==='object'?SHOP.find(s=>s.id===c.id):SHOP.find(s=>s.id===c);
+    return `<div class="mc mf">${item?item.emoji:'🌱'}</div>`;
+  }).join('');
+
+  return `<div class="page" id="page-dashboard">
+    <div class="balance-bar">
+      <div><div class="bl">本月結餘</div><div class="bv">${bal>=0?'':'−'}$${Math.abs(bal).toLocaleString()}</div></div>
+      <div style="text-align:right"><div class="bl">${lv.title}</div><div style="color:rgba(255,255,255,.5);font-size:.65rem">Lv.${lv.lv}</div></div>
+    </div>
+    <div class="dash-hero">
+      <div class="hi inc"><div class="lb">📈 收入</div><div class="vl">$${tIn.toLocaleString()}</div></div>
+      <div class="hi exp"><div class="lb">📉 支出</div><div class="vl">$${tOut.toLocaleString()}</div></div>
+    </div>
+    <div class="ad-unit"><ins class="adsbygoogle" style="display:block" data-ad-client="ca-pub-1692670290595476"
+         data-ad-slot="2963123186" data-ad-format="auto" data-full-width-responsive="true"></ins>
+      自適應廣告單元</div>
+    <div class="card">
+      <div class="card-t">最近紀錄</div>
+      <ul class="tx-list">${txH}</ul>
+    </div>
+    <div class="card">
+      <div class="card-t"><span>我的農場</span><span style="cursor:pointer" onclick="sw('farm')">查看全部 →</span></div>
+      <div class="mini-farm">${mf}</div>
+    </div>
+  </div>`;
+}
+
+// ========== RECORD ==========
+function renderRec(){
+  const cats=CATS[recType].map(c=>
+    `<button class="cb${selCat===c.id?' sel':''}" data-c="${c.id}" onclick="pickCat('${c.id}')"><span class="ce">${c.icon}</span><span class="cl">${c.name}</span></button>`
+  ).join('');
+  return `<div class="page" id="page-record">
+    <div class="rec-amt-wrap">
+      <div class="currency">${recType==='expense'?'💸 支出金額':'💰 收入金額'}</div>
+      <input id="rAmt" class="rec-amt-input" type="number" inputmode="decimal" placeholder="0.00" min="0">
+    </div>
+    <div class="type-tog">
+      <button class="${recType==='expense'?'a-exp':''}" onclick="togRec('expense')">💸 支出</button>
+      <button class="${recType==='income'?'a-inc':''}" onclick="togRec('income')">💰 收入</button>
+    </div>
+    <div class="fsec"><label>分類</label><div class="cg" id="cGrid">${cats}</div></div>
+    <div class="fsec"><label>備註</label><input id="rNote" class="finput" type="text" placeholder="簡短備註（選填）" maxlength="50"></div>
+    <button class="sub-btn" onclick="submitRec(event)">✅ 記錄並獲得種子</button>
+  </div>`;
+}
+
+// ========== FARM ==========
+function renderFarm(d){
+  const lv=getLevel(d.farmItems);
+  const next=getNextLevel(d.farmItems);
+  const xpPct=next?((d.farmItems-lv.need)/(next.need-lv.need)*100):100;
+  const w=getWeather();
+  const harv=countHarvestable();
+
+  const cells=d.farm.map((cell,i)=>{
+    if(!cell) return `<div class="fc${placingItem?' select-target':''}" data-i="${i}" onclick="farmTap(${i})"></div>`;
+    // handle legacy string format
+    if(typeof cell==='string'){
+      const si=SHOP.find(s=>s.id===cell);
+      return `<div class="fc ff" data-i="${i}" onclick="farmTap(${i})">${si?si.emoji:'🌱'}</div>`;
+    }
+    const si=SHOP.find(s=>s.id===cell.id);
+    const emoji=si?si.emoji:'🌱';
+    const stage=cell.stage||0;
+    const isHarv=stage>=3;
+    let dots='';
+    if(stage===1) dots='<span class="growth-dot g1"></span>';
+    else if(stage===2) dots='<span class="growth-dot g2"></span>';
+    else if(stage>=3) dots='<span class="growth-dot g3"></span>';
+    return `<div class="fc ff${isHarv?' harvestable':''}" data-i="${i}" onclick="farmTap(${i})">${stage<2?'🌱':emoji}${dots}</div>`;
+  }).join('');
+
+  return `<div class="page" id="page-farm">
+    <div class="farm-header">
+      <div class="farm-lvl">🏆 Lv.${lv.lv} ${lv.title}</div>
+      <div class="farm-xp"><div class="farm-xp-fill" style="width:${xpPct}%"></div></div>
+      <div class="farm-xp-label">${d.farmItems}/${next?next.need:25}</div>
+    </div>
+    <div class="farm-weather">
+      <div class="fw-icon">${w.icon}</div>
+      <div class="fw-info"><div class="fw-title">今日天氣：${w.name}</div><div class="fw-desc">${w.desc}</div></div>
+    </div>
+    <div class="fg">${cells}</div>
+    ${harv>0?`<div class="farm-actions">
+      <button class="fa-harvest" onclick="harvestAll()">🌾 收穫全部（${harv}個）</button>
+      <button class="fa-remove" onclick="toggleRemove()">🗑️ 移除</button>
+    </div>`:`<div class="farm-actions">
+      <button class="fa-remove" onclick="toggleRemove()" style="flex:1">🗑️ 移除作物</button>
+    </div>`}
+    <div class="card" style="margin-top:10px">
+      <div class="card-t">農場指南</div>
+      <p style="font-size:.75rem;color:#999;line-height:1.7">
+        📝 記帳賺種子（支出+1 / 收入+3）<br>
+        🛒 商店購買作物 → 點農場空格放置<br>
+        🌱→🌿→${'\u{1F33B}'}→🌟 作物經歷 3 階段生長<br>
+        ✨ 金色光圈 = 可收穫，獲得額外種子<br>
+        ${w.icon} 天氣影響生長速度（每日隨機更換）<br>
+        🔥 連續登入天數越多，每日獎勵越多（最高+7）
+      </p>
+    </div>
+  </div>`;
+}
+
+// ========== SHOP ==========
+function renderShop2(d){
+  const ownedCount={};
+  d.farm.forEach(c=>{
+    if(!c) return;
+    const id=typeof c==='object'?c.id:c;
+    ownedCount[id]=(ownedCount[id]||0)+1;
+  });
+  const items=SHOP.map(it=>{
+    const ok=d.seeds>=it.cost;
+    const cnt=ownedCount[it.id]||0;
+    return `<div class="si${ok?'':' no'}${selShop===it.id?' sel':''}" data-s="${it.id}" onclick="pickShop('${it.id}')">
+      ${cnt?`<span class="owned">×${cnt}</span>`:''}
+      <span class="se">${it.emoji}</span>
+      <div class="sn">${it.name}</div>
+      <span class="sc">${it.cost}</span>
+      <div style="font-size:.58rem;color:#aaa;margin-top:3px">收穫 +${it.harvest}🌰 | ${it.growTime}天</div>
+    </div>`;
+  }).join('');
+
+  return `<div class="page" id="page-shop">
+    <div class="shop-bal"><div class="sb-l">我的種子</div><div class="sb-v">🌰 ${d.seeds}</div></div>
+    <div class="sg">${items}</div>
+    <button class="buy-btn" id="buyBtn" onclick="buyItem()">購買並到農場放置</button>
+    <div class="ad-unit" style="margin-top:14px"><ins class="adsbygoogle" style="display:block"
+         data-ad-client="ca-pub-1692670290595476" data-ad-slot="2963123186"
+         data-ad-format="auto" data-full-width-responsive="true"></ins>自適應廣告單元</div>
+  </div>`;
+}
+
+// ========== INTERACTIONS ==========
+function sw(t){
+  tab=t;
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.getElementById('page-'+t)?.classList.add('active');
+  document.querySelectorAll('.nav button').forEach(b=>b.classList.toggle('active',b.dataset.t===t));
+}
+function togRec(type){recType=type;selCat=null;render();sw('record')}
+function pickCat(id){
+  selCat=id;
+  document.querySelectorAll('.cb').forEach(b=>b.classList.toggle('sel',b.dataset.c===id));
+}
+function submitRec(e){
+  const el=document.getElementById('rAmt');
+  const note=document.getElementById('rNote');
+  const amt=parseFloat(el.value);
+  if(!amt||amt<=0){el.parentElement.classList.add('shake');setTimeout(()=>el.parentElement.classList.remove('shake'),400);return}
+  if(!selCat){document.getElementById('cGrid').classList.add('shake');setTimeout(()=>document.getElementById('cGrid').classList.remove('shake'),400);return}
+  // ripple
+  const btn=e.currentTarget;const rect=btn.getBoundingClientRect();
+  const rip=document.createElement('span');rip.className='ripple';
+  rip.style.width=rip.style.height=Math.max(rect.width,rect.height)+'px';
+  rip.style.left=(e.clientX-rect.left-rect.width/2)+'px';
+  rip.style.top=(e.clientY-rect.top-rect.height/2)+'px';
+  btn.appendChild(rip);setTimeout(()=>rip.remove(),500);
+
+  const tx={type:recType,amount:amt,cat:selCat,note:note.value.trim(),ts:Date.now()};
+  Store.data.transactions.push(tx);
+  const earned=recType==='income'?3:1;
+  Store.data.seeds+=earned;
+  Store.save();
+  document.getElementById('moTitle').textContent='獲得種子！';
+  document.getElementById('moText').textContent=recType==='income'?'收入記錄成功！':'支出記錄成功！';
+  document.getElementById('moAmt').textContent=`+${earned}`;
+  document.querySelector('.mo-emoji').textContent='🌰';
+  document.getElementById('rewardMo').classList.add('show');
+  try{(adsbygoogle=window.adsbygoogle||[]).push({})}catch(e){}
+  el.value='';note.value='';selCat=null;
+}
+function closeMo(){
+  document.getElementById('rewardMo').classList.remove('show');
+  render();sw('dashboard');
+}
+function pickShop(id){
+  selShop=id;
+  document.querySelectorAll('.si').forEach(el=>el.classList.toggle('sel',el.dataset.s===id));
+  const btn=document.getElementById('buyBtn');const item=SHOP.find(s=>s.id===id);
+  btn.classList.add('vis');
+  btn.textContent=`購買 ${item.name}（🌰${item.cost}）並到農場放置`;
+}
+function buyItem(){
+  if(!selShop) return;
+  const item=SHOP.find(s=>s.id===selShop);
+  if(Store.data.seeds<item.cost){showToast('種子不夠！');return}
+  const empty=Store.data.farm.indexOf(null);
+  if(empty===-1){showToast('農場已滿！');return}
+  Store.data.seeds-=item.cost;
+  placingItem={id:item.id,stage:0,growth:0};
+  selShop=null;
+  render();sw('farm');
+  showToast(`已購買 ${item.emoji} ${item.name}，請點選空格放置！`);
+}
+function farmTap(idx){
+  const d=Store.data;
+  if(farmMode==='remove'){
+    if(d.farm[idx]){
+      d.farm[idx]=null;
+      d.farmItems=d.farm.filter(x=>x!==null).length;
+      Store.save();
+      showToast('已移除作物');
+      farmMode='normal';
+      render();sw('farm');
+    }
+    return;
+  }
+  if(placingItem){
+    if(d.farm[idx]!==null){showToast('此格已有作物');return}
+    d.farm[idx]={...placingItem};
+    d.farmItems=d.farm.filter(x=>x!==null).length;
+    placingItem=null;
+    Store.save();
+    render();sw('farm');
+    setTimeout(()=>{
+      const cell=document.querySelector(`.fc[data-i="${idx}"]`);
+      if(cell){cell.classList.add('placing');spawnSparkles(cell)}
+    },50);
+    return;
+  }
+  // harvest single
+  const cell=d.farm[idx];
+  if(cell&&typeof cell==='object'&&cell.stage>=3){
+    const item=SHOP.find(s=>s.id===cell.id);
+    const reward=item?item.harvest:3;
+    d.seeds+=reward;
+    d.totalHarvested=(d.totalHarvested||0)+1;
+    d.farm[idx]={id:cell.id,stage:0,growth:0}; // replant
+    Store.save();
+    showToast(`收穫 ${item?item.emoji:'🌱'} +${reward} 🌰`);
+    render();sw('farm');
+  } else if(!cell){
+    sw('shop');
+  }
+}
+function harvestAll(){
+  const d=Store.data;let total=0;
+  d.farm=d.farm.map(cell=>{
+    if(cell&&typeof cell==='object'&&cell.stage>=3){
+      const item=SHOP.find(s=>s.id===cell.id);
+      total+=item?item.harvest:3;
+      d.totalHarvested=(d.totalHarvested||0)+1;
+      return {id:cell.id,stage:0,growth:0};
+    }
+    return cell;
+  });
+  d.seeds+=total;
+  Store.save();
+  document.getElementById('moTitle').textContent='豐收！';
+  document.getElementById('moText').textContent=`收穫了所有成熟的作物`;
+  document.getElementById('moAmt').textContent=`+${total}`;
+  document.querySelector('.mo-emoji').textContent='🎉';
+  document.getElementById('rewardMo').classList.add('show');
+  try{(adsbygoogle=window.adsbygoogle||[]).push({})}catch(e){}
+}
+function toggleRemove(){
+  if(farmMode==='remove'){farmMode='normal';showToast('取消移除模式');render();sw('farm');return}
+  farmMode='remove';
+  showToast('點選要移除的作物');
+}
+function spawnSparkles(el){
+  const em=['✨','🌟','💫','⭐'];
+  for(let i=0;i<4;i++){
+    const sp=document.createElement('span');sp.className='sparkle';sp.textContent=em[i%4];
+    sp.style.left=Math.random()*80+'%';sp.style.top=Math.random()*80+'%';
+    sp.style.animationDelay=i*.1+'s';el.appendChild(sp);setTimeout(()=>sp.remove(),800);
+  }
+}
+
+// ========== ADSENSE ==========
+const ads=document.createElement('script');
+ads.src='https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-1692670290595476';
+ads.crossOrigin='anonymous';ads.async=true;document.head.appendChild(ads);
+
+// ========== PWA ==========
+if('serviceWorker' in navigator){
+  const sw2=new Blob([`self.addEventListener('install',e=>self.skipWaiting());
+    self.addEventListener('activate',e=>e.waitUntil(clients.claim()));
+    self.addEventListener('fetch',e=>e.respondWith(fetch(e.request).catch(()=>caches.match(e.request))));`],
+    {type:'application/javascript'});
+  navigator.serviceWorker.register(URL.createObjectURL(sw2)).catch(()=>{});
+}
+
+// ========== INIT ==========
+render();
+</script>
+</body>
+</html>
